@@ -1,0 +1,28 @@
+Computational & UI Optimizations
+Thread Control via n_jobs
+The script now allows you to specify exactly how many CPU cores to allocate for permutation testing.
+Description: By setting this parameter in PermutationTestConfig, you can choose to use all available cores (-1) for maximum speed or a specific number (e.g., 4) to ensure your computer remains responsive for other tasks like browsing or writing.
+Benefit: Prevents system "freezing" during heavy computation while maximizing parallel throughput.
+tqdm Progress Monitoring
+A live, interactive progress bar is now integrated into the parallel engine.
+Description: This provides real-time feedback in your Jupyter notebook or terminal, showing the percentage of permutations completed, the number of shuffles per second, and an estimated time of completion (ETA).
+Benefit: Crucial for long-running analyses (like 1,000-parcel shuffles), ensuring you can monitor the script's health and planning without guessing.
+Vectorized Edge Discovery (iu Masking)
+Python-based loops have been replaced with NumPy-level matrix indexing using np.triu_indices.
+Description: Instead of manually checking every cell in a $1,000 \times 1,000$ matrix (which involves roughly 500,000 checks), the script extracts the entire upper triangle of the matrix as a single block in memory.
+Benefit: Shifting this from Python to optimized C-code (via NumPy) results in an exponential speedup for large parcel counts.
+Statistical & Memory Robustness
+Adaptive Alpha Fallback
+The worker threads now use a "fast-first, robust-second" strategy for fitting the Graphical Lasso.
+Description: The script initially attempts to fit each shuffled dataset using the optimal $\alpha$ (penalty) found in your observed data. If the shuffle creates a "difficult" dataset where that penalty fails to converge, the core automatically triggers a full Cross-Validation (GraphicalLassoCV) to find a stable penalty for that specific shuffle.
+Benefit: Ensures the permutation test doesn't crash due to mathematical instabilities in random noise, while maintaining high speed for 99% of the shuffles.
+Serialized Data Reduction (Tuple-based Returns)
+The communication between the main script and the worker cores has been streamlined.
+Description: Instead of sending massive, heavy NetworkFitResult objects back to the main process, each core only returns a lightweight list of Python tuples containing the edge names and partial correlation values.
+Benefit: Dramatically reduces Inter-process Communication (IPC) overhead and memory fragmentation. For 1,000 parcels, this prevents the script from slowing down as your RAM fills with uncollected garbage data.
+Sparsity Filtering (edge_threshold)
+The script now prunes "near-zero" noise before creating DataFrames.
+Description: A 1,000-node network can technically have half a million edges, most of which are tiny "noise" values like $10^{-14}$. By applying the edge_threshold during the extraction phase, we only store the meaningful, non-zero edges.
+Benefit: Keeps the final results manageable and prevents the permutation table from becoming a multi-gigabyte file that crashes Excel or Pandas.
+
+
